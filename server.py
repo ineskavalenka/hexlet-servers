@@ -1,9 +1,11 @@
 import socket
 import signal
 import sys
+from task import *
 
 server_socket = None
 server_cores = None
+server_tasks = []
 
 def signal_handler(signal_received, frame):
     print("\nServer shutting down...")
@@ -37,6 +39,13 @@ def start_server(host, port):
                         conn.sendall(f"{server_cores}".encode('ascii'))
                     elif request == "get load":
                         conn.sendall(f"{1/3}".encode('ascii'))
+                    elif request.startswith("assign"):
+                        args = request.split(" ")
+                        points = int(args[1])
+                        description = args[2]
+                        estimate = points / server_cores
+                        server_tasks.append(Task(estimate, description))
+                        conn.sendall("assigned".encode('ascii'))
                     else:
                         response = input("Server: ")
                         conn.sendall(response.encode('ascii'))

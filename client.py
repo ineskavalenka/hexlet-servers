@@ -1,6 +1,7 @@
 import socket
 import signal
 import sys
+from task import *
 
 server_sockets = []
 server_cores = []
@@ -51,6 +52,24 @@ def get_load(server_index):
     response = float(response)
     return response
 
+def get_task():
+    while True:
+        d = input("Task?> ")
+        errorstring = "Enter the task in the format '<storypoints(1..100)> <description(string)>'"
+        try:
+            i = d.index(' ')
+            storypoints = int(d[:i])
+            description = d[i+1:].strip()
+            if not (0 < storypoints <= 100) or not description:
+                raise ValueError(errorstring)
+            return Task(storypoints, description)
+        except (ValueError, IndexError):
+            print(errorstring)
+
+def assign_task(server_index, task):
+    response = send_command(server_index, f"assign {task.storypoints} {task.description}")
+    return response == "assigned"
+
 def start_client(num_servers):
     connect_to_servers(num_servers)
     
@@ -60,28 +79,24 @@ def start_client(num_servers):
             print("Cores initialized", i, server_cores[i])
         
         for i in range(num_servers):
-            server_load.append(get_load(i))
-            print("Load initialized", i, server_load[i])
+            server_load.append(0.0)
 
-        while True:          
-            message = input("Client: ")
-            if not message:
-                continue
-            if message.startswith('0'):
-                target_index = 0
-            elif message.startswith('1'):
-                target_index = 1
-            elif message.startswith('2'):
-                target_index = 2
-            else:
-                print("Invalid message prefix. Use '0', '1', or '2'. Message skipped.")
-                continue
-            if target_index >= len(server_sockets):
-                print(f"No server at index {target_index}. Message skipped.")
-                continue
+        while True:              
+            task = get_task()
             
-            response = send_command(message)
- 
+            for i in range(num_servers):
+                server_load[i] = get_load(i)
+                print("Load updated", i, server_load[i])
+            
+            min_load_i = 0
+            for i in range(num_servers):
+                if server_load[i] <= server_load[min_load_i]:
+                    min_load_i = i
+            
+            assign_task(min_load_i, task)
+            
+            print("Task assigned, server=", i, sep='')
+
     except (ConnectionResetError, BrokenPipeError):
         print("A server disconnected unexpectedly.")
     except (KeyboardInterrupt, EOFError):
