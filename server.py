@@ -22,23 +22,27 @@ def task_processor(server_tasks, task_state):
     global remaining_queue
 
     while True:
-        remaining_lock.acquire()
         task = server_tasks.get()
+
+        if task is None:
+            continue
+
+        remaining_lock.acquire()
         remaining_queue -= task.storypoints
         remaining_current_task = task.storypoints
         print(f"Doing task {task.description} ({task.storypoints})")
         print(f"Remaining effort {remaining_queue + remaining_current_task}")
         remaining_lock.release()
-        
+
         while remaining_current_task > 0:
             time.sleep(1)
             remaining_lock.acquire()
             remaining_current_task -= 1
             remaining_lock.release()
-        
+
         remaining_lock.acquire()
         remaining_current_task = 0
-        server_tasks.task_done()
+        server_tasks.task_done() 
         remaining_lock.release()
 
 def signal_handler(signal_received, frame):
@@ -78,20 +82,20 @@ def start_server(host, port):
                     if request == "get cores":
                         conn.sendall(f"{server_cores}".encode('ascii'))
                     elif request == "get load":
-                        estimate = 0
+                        estimate1 = 0
                         remaining_lock.acquire()
-                        estimate = remaining_current_task + remaining_queue
-                        print("estimate", estimate)
+                        estimate1 = remaining_current_task + remaining_queue
+                        print("estimate", estimate1)
                         remaining_lock.release()
-                        conn.sendall(f"{estimate}".encode('ascii'))
+                        conn.sendall(f"{estimate1}".encode('ascii'))
                     elif request.startswith("assign"):
                         args = request.split(" ")
                         points = int(args[1])
                         description = args[2]
-                        estimate = points / server_cores
+                        estimate2 = points / server_cores
                         remaining_lock.acquire()
-                        server_tasks.put(Task(estimate, description))
-                        remaining_queue += remaining_queue + estimate
+                        server_tasks.put(Task(estimate2, description))
+                        remaining_queue += estimate2
                         remaining_lock.release()
                         conn.sendall("assigned".encode('ascii'))
                     else:
