@@ -6,6 +6,7 @@ from task import *
 server_sockets = []
 server_cores = []
 server_load = []
+base_port = 0
 
 def signal_handler(signal_received, frame):
     print("\nClient shutting down...")
@@ -21,7 +22,7 @@ def connect_to_servers(num_servers):
     global server_sockets
     for i in range(num_servers):
         host = '127.0.0.1'
-        port = 50000 + i
+        port = base_port + i
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((host, port))
@@ -107,11 +108,14 @@ def start_client(num_servers):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python client.py <number_of_servers>")
+    if len(sys.argv) != 3:
+        print("Usage: python client.py <base_port> <number_of_servers>")
         sys.exit(1)
     try:
-        num_servers = int(sys.argv[1])
+        base_port = int(sys.argv[1])
+        if base_port <= 0:
+            raise ValueError
+        num_servers = int(sys.argv[2])
         if num_servers <= 0:
             raise ValueError
     except ValueError:

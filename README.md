@@ -4,7 +4,7 @@ demo https://www.youtube.com/watch?v=0_0UvTdsnRA
 
 # Usage
 
-The client will expect the first server to listen on port 50000, the second server on port 50001, the third on 50002 and so on.
+The client expects that the server ports are consequent (e.g. the first server listens on port 50000, the second server on port 50001, the third on 50002 and so on.)
 
 On client startup, the servers should be already listening.
 
@@ -18,7 +18,9 @@ cores (int [1..100]): the number of simulated cores; the higher the number the f
 
 ### start client
 
-python client.py <servers_count>
+python client.py <base_port> <servers_count>
+
+base_port: the port of the first server.
 
 servers_count: int, >1, whatever you like, but you should have the same amount of servers listening.
 
