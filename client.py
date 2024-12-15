@@ -4,6 +4,7 @@ import sys
 
 server_sockets = []
 server_cores = []
+server_load = []
 
 def signal_handler(signal_received, frame):
     print("\nClient shutting down...")
@@ -45,13 +46,23 @@ def get_cores(server_index):
     response = send_command(server_index, "get cores")
     return int(response.strip())
 
+def get_load(server_index):
+    response = send_command(server_index, "get load")
+    response = float(response)
+    return response
+
 def start_client(num_servers):
     connect_to_servers(num_servers)
+    
     try:
         for i in range(num_servers):
             server_cores.append(get_cores(i))
             print("Cores initialized", i, server_cores[i])
         
+        for i in range(num_servers):
+            server_load.append(get_load(i))
+            print("Load initialized", i, server_load[i])
+
         while True:          
             message = input("Client: ")
             if not message:

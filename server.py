@@ -35,6 +35,8 @@ def start_server(host, port):
                     print(f"Client: {request}")
                     if request == "get cores":
                         conn.sendall(f"{server_cores}".encode('ascii'))
+                    elif request == "get load":
+                        conn.sendall(f"{1/3}".encode('ascii'))
                     else:
                         response = input("Server: ")
                         conn.sendall(response.encode('ascii'))
