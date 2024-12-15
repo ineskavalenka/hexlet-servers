@@ -83,7 +83,7 @@ def start_client(num_servers):
         for i in range(num_servers):
             server_load.append(0.0)
 
-        while True:              
+        while True:
             task = get_task()
             
             for i in range(num_servers):
@@ -96,7 +96,7 @@ def start_client(num_servers):
                 load = server_load[i] + task.storypoints / server_cores[i]
                 if load < min_load_v:
                     min_load_v = load
-                    min_load_i = i  
+                    min_load_i = i
             assign_task(min_load_i, task)
             print("Task assigned, server=", min_load_i, sep='')
 

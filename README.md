@@ -22,7 +22,7 @@ python client.py <base_port> <servers_count>
 
 base_port: the port of the first server.
 
-servers_count: int, >1, whatever you like, but you should have the same amount of servers listening.
+servers_count: int, >=1, whatever you like, but you should have the same amount of servers listening.
 
 ### assign tasks
 
