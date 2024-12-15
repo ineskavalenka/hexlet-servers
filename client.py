@@ -60,6 +60,7 @@ def get_task():
             i = d.index(' ')
             storypoints = int(d[:i])
             description = d[i+1:].strip()
+            print(storypoints, description)
             if not (0 < storypoints <= 100) or not description:
                 raise ValueError(errorstring)
             return Task(storypoints, description)

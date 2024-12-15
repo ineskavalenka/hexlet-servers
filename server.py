@@ -1,11 +1,45 @@
 import socket
 import signal
+import threading
 import sys
 from task import *
+import time
+import queue
 
 server_socket = None
 server_cores = None
-server_tasks = []
+
+### Task handling
+server_tasks = queue.Queue()
+
+remaining_lock = threading.Lock()
+remaining_current_task = 0.0
+remaining_queue = 0.0
+###
+
+def task_processor(server_tasks, task_state):
+    global remaining_current_task
+    global remaining_queue
+
+    while True:
+        remaining_lock.acquire()
+        task = server_tasks.get()
+        remaining_queue -= task.storypoints
+        remaining_current_task = task.storypoints
+        print(f"Doing task {task.description} ({task.storypoints})")
+        print(f"Remaining effort {remaining_queue + remaining_current_task}")
+        remaining_lock.release()
+        
+        while remaining_current_task > 0:
+            time.sleep(1)
+            remaining_lock.acquire()
+            remaining_current_task -= 1
+            remaining_lock.release()
+        
+        remaining_lock.acquire()
+        remaining_current_task = 0
+        server_tasks.task_done()
+        remaining_lock.release()
 
 def signal_handler(signal_received, frame):
     print("\nServer shutting down...")
@@ -18,6 +52,8 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def start_server(host, port):
     global server_socket
+    global remaining_queue
+    global remaining_current_task
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen()
@@ -26,6 +62,10 @@ def start_server(host, port):
     try:
         conn, addr = server_socket.accept()
         print(f"Connected by {addr}")
+        
+        task_thread = threading.Thread(target=task_processor, args=(server_tasks, None), daemon=True)
+        task_thread.start()
+
         with conn:
             while True:
                 try:
@@ -38,13 +78,21 @@ def start_server(host, port):
                     if request == "get cores":
                         conn.sendall(f"{server_cores}".encode('ascii'))
                     elif request == "get load":
-                        conn.sendall(f"{1/3}".encode('ascii'))
+                        estimate = 0
+                        remaining_lock.acquire()
+                        estimate = remaining_current_task + remaining_queue
+                        print("estimate", estimate)
+                        remaining_lock.release()
+                        conn.sendall(f"{estimate}".encode('ascii'))
                     elif request.startswith("assign"):
                         args = request.split(" ")
                         points = int(args[1])
                         description = args[2]
                         estimate = points / server_cores
-                        server_tasks.append(Task(estimate, description))
+                        remaining_lock.acquire()
+                        server_tasks.put(Task(estimate, description))
+                        remaining_queue += remaining_queue + estimate
+                        remaining_lock.release()
                         conn.sendall("assigned".encode('ascii'))
                     else:
                         response = input("Server: ")
@@ -74,4 +122,3 @@ if __name__ == "__main__":
         print("Port should be free, cores should be an integer from 1 to 100")
         sys.exit(1)
     start_server('127.0.0.1', port)
-    
