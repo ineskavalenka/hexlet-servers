@@ -1,3 +1,4 @@
 import client
 
-print(client.get_task())
+task = client.get_task()
+print(task.storypoints, task.description)

@@ -38,9 +38,9 @@ def send_command(server_index, message):
         target_socket.sendall(message.encode('ascii'))
         data = target_socket.recv(1024)
         response = data.decode('ascii')
-        print(f"Server {server_index}: {response}")
-    else:
-        print(f"Server {server_index} is not connected. Message skipped.")
+        # print(f"Server {server_index}: {response}")
+    #else:
+        # print(f"Server {server_index} is not connected. Message skipped.")
     return response
 
 def get_cores(server_index):
@@ -55,12 +55,12 @@ def get_load(server_index):
 def get_task():
     while True:
         d = input("Task?> ")
-        errorstring = "Enter the task in the format '<storypoints(1..100)> <description(string)>'"
+        errorstring = "Enter the task in the format '<storypoints(int[1..100])> <description(string)>'"
         try:
             i = d.index(' ')
             storypoints = int(d[:i])
             description = d[i+1:].strip()
-            print(storypoints, description)
+            # print(storypoints, description)
             if not (0 < storypoints <= 100) or not description:
                 raise ValueError(errorstring)
             return Task(storypoints, description)

@@ -31,17 +31,18 @@ def task_processor(server_tasks, task_state):
         remaining_queue -= task.storypoints
         remaining_current_task = task.storypoints
         print(f"Doing task {task.description} ({task.storypoints})")
-        print(f"Remaining effort {remaining_queue + remaining_current_task}")
         remaining_lock.release()
 
         while remaining_current_task > 0:
             time.sleep(1)
             remaining_lock.acquire()
             remaining_current_task -= 1
+            if remaining_current_task < 0:
+                remaining_current_task = 0.0
+            print(f"Remaining effort (total) {remaining_queue + remaining_current_task}")
             remaining_lock.release()
 
         remaining_lock.acquire()
-        remaining_current_task = 0
         server_tasks.task_done() 
         remaining_lock.release()
 
@@ -78,23 +79,25 @@ def start_server(host, port):
                         print("Client disconnected.")
                         break
                     request = data.decode('ascii')
-                    print(f"Client: {request}")
+                    # print(f"Client: {request}")
                     if request == "get cores":
                         conn.sendall(f"{server_cores}".encode('ascii'))
                     elif request == "get load":
                         estimate1 = 0
                         remaining_lock.acquire()
                         estimate1 = remaining_current_task + remaining_queue
-                        print("estimate", estimate1)
+                        # print("estimate", estimate1)
                         remaining_lock.release()
                         conn.sendall(f"{estimate1}".encode('ascii'))
                     elif request.startswith("assign"):
-                        args = request.split(" ")
-                        points = int(args[1])
-                        description = args[2]
+                        args = request[len("assign "):]
+                        i = args.index(' ')
+                        points = int(args[:i])
+                        description = args[i+1:].strip()
                         estimate2 = points / server_cores
                         remaining_lock.acquire()
                         server_tasks.put(Task(estimate2, description))
+                        print(f"Assigned {description} ({estimate2})")
                         remaining_queue += estimate2
                         remaining_lock.release()
                         conn.sendall("assigned".encode('ascii'))
@@ -121,7 +124,10 @@ if __name__ == "__main__":
         server_cores = int(sys.argv[2])
         if not (0 < server_cores <= 100):
             raise ValueError
-        print(server_cores)
+        s = 's'
+        if server_cores == 1:
+            s = ''
+        print(server_cores, f"core{s} ready")
     except ValueError:
         print("Port should be free, cores should be an integer from 1 to 100")
         sys.exit(1)
