@@ -3,6 +3,7 @@ import signal
 import sys
 
 server_socket = None
+server_cores = None
 
 def signal_handler(signal_received, frame):
     print("\nServer shutting down...")
@@ -30,9 +31,13 @@ def start_server(host, port):
                     if not data:
                         print("Client disconnected.")
                         break
-                    print(f"Client: {data.decode('ascii')}")
-                    response = input("Server: ")
-                    conn.sendall(response.encode('ascii'))
+                    request = data.decode('ascii')
+                    print(f"Client: {request}")
+                    if request == "get cores":
+                        conn.sendall(f"{server_cores}".encode('ascii'))
+                    else:
+                        response = input("Server: ")
+                        conn.sendall(response.encode('ascii'))
                 except (ConnectionResetError, BrokenPipeError):
                     print("Client disconnected unexpectedly.")
                     break
@@ -43,15 +48,19 @@ def start_server(host, port):
         print("Server socket closed.")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python server.py <port>")
+    if len(sys.argv) != 3:
+        print("Usage: python server.py <port> <cores>")
         sys.exit(1)
     try:
         port = int(sys.argv[1])
         if port <= 0:
             raise ValueError
+        server_cores = int(sys.argv[2])
+        if not (0 < server_cores <= 100):
+            raise ValueError
+        print(server_cores)
     except ValueError:
-        print("Usage: python server.py <port>")
+        print("Port should be free, cores should be an integer from 1 to 100")
         sys.exit(1)
     start_server('127.0.0.1', port)
     

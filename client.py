@@ -3,6 +3,7 @@ import signal
 import sys
 
 server_sockets = []
+server_cores = []
 
 def signal_handler(signal_received, frame):
     print("\nClient shutting down...")
@@ -28,10 +29,30 @@ def connect_to_servers(num_servers):
             print(f"Failed to connect to server {i} at {host}:{port}: {e}")
             server_sockets.append(None)
 
+def send_command(server_index, message):
+    response = ""
+    target_socket = server_sockets[server_index]
+    if target_socket:
+        target_socket.sendall(message.encode('ascii'))
+        data = target_socket.recv(1024)
+        response = data.decode('ascii')
+        print(f"Server {server_index}: {response}")
+    else:
+        print(f"Server {server_index} is not connected. Message skipped.")
+    return response
+
+def get_cores(server_index):
+    response = send_command(server_index, "get cores")
+    return int(response.strip())
+
 def start_client(num_servers):
     connect_to_servers(num_servers)
-    while True:
-        try:
+    try:
+        for i in range(num_servers):
+            server_cores.append(get_cores(i))
+            print("Cores initialized", i, server_cores[i])
+        
+        while True:          
             message = input("Client: ")
             if not message:
                 continue
@@ -47,19 +68,15 @@ def start_client(num_servers):
             if target_index >= len(server_sockets):
                 print(f"No server at index {target_index}. Message skipped.")
                 continue
-            target_socket = server_sockets[target_index]
-            if target_socket:
-                target_socket.sendall(message.encode('ascii'))
-                data = target_socket.recv(1024)
-                print(f"Server {target_index}: {data.decode('ascii')}")
-            else:
-                print(f"Server {target_index} is not connected. Message skipped.")
-        except (ConnectionResetError, BrokenPipeError):
-            print("A server disconnected unexpectedly.")
-        except (KeyboardInterrupt, EOFError):
-            signal_handler(None, None)
-        except Exception as e:
-            print(f"Error: {e}")
+            
+            response = send_command(message)
+ 
+    except (ConnectionResetError, BrokenPipeError):
+        print("A server disconnected unexpectedly.")
+    except (KeyboardInterrupt, EOFError):
+        signal_handler(None, None)
+    except Exception as e:
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
