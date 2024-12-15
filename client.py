@@ -90,13 +90,14 @@ def start_client(num_servers):
                 print("Load updated", i, server_load[i])
             
             min_load_i = 0
-            for i in range(num_servers):
-                if server_load[i] <= server_load[min_load_i]:
-                    min_load_i = i
-            
+            min_load_v = server_load[0]
+            for i in range(1, num_servers):
+                load = server_load[i] + task.storypoints / server_cores[i]
+                if load < min_load_v:
+                    min_load_v = load
+                    min_load_i = i  
             assign_task(min_load_i, task)
-            
-            print("Task assigned, server=", i, sep='')
+            print("Task assigned, server=", min_load_i, sep='')
 
     except (ConnectionResetError, BrokenPipeError):
         print("A server disconnected unexpectedly.")
